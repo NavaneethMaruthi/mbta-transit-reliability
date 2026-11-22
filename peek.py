@@ -15,13 +15,13 @@ Usage:
 
 import gzip
 import json
+import os
 import sys
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
-DATA_DIR = Path("data/raw")
-
+DATA_DIR = Path(os.environ.get("MBTA_DATA_DIR", "data/raw"))
 
 def read_lines(path):
     with gzip.open(path, "rt", encoding="utf-8") as handle:
