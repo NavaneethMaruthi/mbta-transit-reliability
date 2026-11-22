@@ -1,3 +1,4 @@
 data/
 .env
-*.docx
+*.docx.venv/
+What this project actually is.docx

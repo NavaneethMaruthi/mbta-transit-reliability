@@ -5,12 +5,6 @@ MBTA vehicle position collector.
 Polls the MBTA V3 /vehicles endpoint on a fixed interval and appends every
 response, unmodified, to an hourly gzipped JSON-lines file.
 
-Design rules, in priority order:
-  1. Never crash. A dead collector loses data permanently.
-  2. Never modify the payload. Raw means raw. Parsing happens later, offline,
-     where you can fix your mistakes and re-run.
-  3. Never block on anything slow. One poll must not delay the next.
-
 Usage:
     export MBTA_API_KEY=your_key_here
     python3 collect.py
