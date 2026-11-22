@@ -1,0 +1,13 @@
+   [Unit]
+   Description=MBTA collector heartbeat to healthchecks.io
+   After=network-online.target
+   Wants=network-online.target
+
+   [Service]
+   Type=oneshot
+   User=mbta
+   Group=mbta
+   WorkingDirectory=/opt/mbta
+   EnvironmentFile=/etc/mbta/collector.env
+   Environment=MBTA_DATA_DIR=/opt/mbta/data/raw
+   ExecStart=/usr/bin/python3 /opt/mbta/heartbeat.py

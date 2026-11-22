@@ -1,0 +1,19 @@
+   [Unit]
+   Description=MBTA vehicle position collector
+   After=network-online.target
+   Wants=network-online.target
+
+   [Service]
+   Type=simple
+   User=mbta
+   Group=mbta
+   WorkingDirectory=/opt/mbta
+   EnvironmentFile=/etc/mbta/collector.env
+   Environment=MBTA_DATA_DIR=/opt/mbta/data/raw
+   Environment=MBTA_POLL_SECONDS=15
+   ExecStart=/usr/bin/python3 /opt/mbta/collect.py
+   Restart=always
+   RestartSec=10
+
+   [Install]
+   WantedBy=multi-user.target
