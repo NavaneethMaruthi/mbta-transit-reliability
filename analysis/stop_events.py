@@ -31,12 +31,21 @@ out of dwell statistics. Only typical patterns are used, because the
 timetable also contains the 20-22 Nov diversion trips, which end at
 Broadway and North Quincy.
 
+Service days (version 4): a "day" is a Boston service day, 3:00 am to
+3:00 am local time, not a UTC calendar day. The raw files are organised by
+UTC date, so one service day is read from two folders and trimmed. Late
+trains after midnight belong to the service day that started that morning,
+the way riders and the MBTA count them. Daylight saving is handled by the
+time-zone conversion.
+
 Usage, from the project folder:
     python analysis/stop_events.py 2026-11-18
 """
 
+import glob
 import os
 import sys
+from datetime import date, timedelta
 
 import duckdb
 
@@ -44,8 +53,19 @@ if len(sys.argv) != 2:
     sys.exit("usage: python analysis/stop_events.py YYYY-MM-DD")
 
 DAY = sys.argv[1]
+NEXT_DAY = (date.fromisoformat(DAY) + timedelta(days=1)).isoformat()
 ROUTE = "Red"
-RAW = f"data/server/raw/{DAY}/*.jsonl.gz"
+
+# A service day spans two UTC folders: this one and the next.
+FILES = sorted(
+    glob.glob(f"data/server/raw/{DAY}/*.jsonl.gz")
+    + glob.glob(f"data/server/raw/{NEXT_DAY}/*.jsonl.gz")
+)
+if not FILES:
+    sys.exit(f"no raw files found for {DAY}")
+RAW = "[" + ", ".join(f"'{f}'" for f in FILES) + "]"
+SERVICE_START = f"(TIMESTAMP '{DAY} 03:00:00' AT TIME ZONE 'America/New_York')"
+SERVICE_END = f"(TIMESTAMP '{NEXT_DAY} 03:00:00' AT TIME ZONE 'America/New_York')"
 GTFS = "data/gtfs/2026-11-22"
 STOPS = f"{GTFS}/stops.txt"
 OUT_DIR = "data/derived"
@@ -104,7 +124,7 @@ CREATE TABLE events AS
 WITH polls AS (
     SELECT fetched_at, vehicles
     FROM read_json(
-        '{RAW}',
+        {RAW},
         format = 'newline_delimited',
         columns = {{
             'fetched_at': 'VARCHAR',
@@ -114,6 +134,8 @@ WITH polls AS (
         }}
     )
     WHERE ok
+      AND fetched_at::TIMESTAMPTZ >= {SERVICE_START}
+      AND fetched_at::TIMESTAMPTZ <  {SERVICE_END}
 ),
 snapshots AS (
     SELECT
@@ -217,7 +239,7 @@ FROM neighbours
 os.makedirs(OUT_DIR, exist_ok=True)
 con.sql(f"COPY events TO '{OUT}' (FORMAT parquet)")
 
-print(f"Visits found, {ROUTE} Line, {DAY} (UTC):")
+print(f"Visits found, {ROUTE} Line, service day {DAY} (3 am to 3 am Boston):")
 con.sql("""
     SELECT kind, is_turnaround, is_terminal_station, count(*) AS visits
     FROM events

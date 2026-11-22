@@ -10,7 +10,8 @@ so no schedule is assumed:
   - bunched:  a gap shorter than half the median
   - big gap:  a gap longer than 1.5 times the median
 
-Times are Boston local time.
+Times are Boston local time. A day is the service day saved by
+stop_events.py (3 am to 3 am), so after-midnight hours are listed last.
 
 Usage, from the project folder:
     python analysis/headways.py 2026-11-18
@@ -103,5 +104,5 @@ SELECT
 FROM headways
 WHERE stop_name = 'Park Street' AND toward = 'Ashmont/Braintree'
 GROUP BY local_hour
-ORDER BY local_hour
+ORDER BY local_hour < 3, local_hour
 """).show(max_rows=30)
